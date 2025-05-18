@@ -1,18 +1,19 @@
 # Triage AI
 
-<p align="center">
-  <img src="https://via.placeholder.com/200x200?text=Triage+AI" alt="Triage AI Logo" width="200" height="200">
-</p>
+> **AI-Powered Development Orchestration for VS Code**
 
-<p align="center">
-  <a href="#features">Features</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#usage">Usage</a> •
-  <a href="#roadmap">Roadmap</a> •
-  <a href="#contributing">Contributing</a> •
-  <a href="#license">License</a>
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Installation](#-installation)
+- [Usage](#-usage)
+- [Roadmap](#-roadmap)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🚀 Vision
 
@@ -52,19 +53,32 @@ Each role expands into a three-member team for deeper collaboration:
 
 ## 🏗️ Architecture
 
-Triage AI combines a TypeScript VS Code extension with a powerful multi-agent backend:
+Triage AI is built on a modular architecture that combines a VS Code extension with a powerful multi-agent backend:
 
-```mermaid
-flowchart TD
-    A[VS Code Extension] -->|API Calls| B[Triage AI Engine]
-    B --> C[PM Agent(s)]
-    B --> D[Architect Agent(s)]
-    B --> E[Security Agent(s)]
-    C --> F[Generated Plan]
-    D --> F
-    E --> F
-    F --> G[Implementation]
-```
+### Core Components
+
+1. **VS Code Extension** (TypeScript/JavaScript)
+   - Provides the user interface and command palette integration
+   - Manages communication with the Triage AI engine
+   - Handles file operations and workspace integration
+
+2. **Triage AI Engine**
+   - Coordinates between different AI agents
+   - Manages the workflow and state of the planning process
+   - Handles API communication with AI providers
+
+3. **Agent Teams**
+   - **PM Agents**: Handle requirements and feature specifications
+   - **Architect Agents**: Design system architecture and components
+   - **Security Agents**: Ensure security best practices and compliance
+
+### Data Flow
+
+1. User submits a request through the VS Code command palette
+2. The extension sends the request to the Triage AI engine
+3. The engine coordinates the appropriate agents to process the request
+4. Agents collaborate to generate a comprehensive project plan
+5. The plan is returned to the user through the VS Code interface
 
 The extension communicates with specialized AI agents through a well-defined API, ensuring seamless integration and real-time feedback.
 
