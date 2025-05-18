@@ -55,12 +55,14 @@ Each role expands into a three-member team for deeper collaboration:
 Triage AI combines a TypeScript VS Code extension with a powerful multi-agent backend:
 
 ```mermaid
-graph TD
+flowchart TD
     A[VS Code Extension] -->|API Calls| B[Triage AI Engine]
     B --> C[PM Agent(s)]
     B --> D[Architect Agent(s)]
     B --> E[Security Agent(s)]
-    C & D & E --> F[Generated Plan]
+    C --> F[Generated Plan]
+    D --> F
+    E --> F
     F --> G[Implementation]
 ```
 
