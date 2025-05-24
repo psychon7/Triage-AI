@@ -1,0 +1,48 @@
+{
+  "name": "triage-ai",
+  "displayName": "Triage AI",
+  "description": "AI-powered workflow for feature specification, architecture design, security review, and testing strategy",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "triage-ai-sidebar",
+          "title": "Triage AI",
+          "icon": "media/icons/logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "triage-ai-sidebar": [
+        {
+          "type": "webview",
+          "id": "triageAI",
+          "name": "Triage AI"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package",
+    "install-extension": "vsce package && code --install-extension triage-ai-0.1.0.vsix"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^16.11.7",
+    "typescript": "^4.5.5",
+    "eslint": "^8.1.0",
+    "vsce": "^2.15.0"
+  }
+}
