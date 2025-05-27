@@ -5,7 +5,7 @@ import * as https from 'https';
 import { URL } from 'url';
 
 // Backend API configuration
-const apiBaseUrl = 'http://localhost:8000';
+const apiBaseUrl = 'http://localhost:8000/api';
 
 export function activate(context: vscode.ExtensionContext) {
   // Create and register the sidebar provider
