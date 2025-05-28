@@ -8,7 +8,7 @@ from decouple import config
 class BedrockCustomLLM(LLM):
     """Custom LLM implementation for Amazon Bedrock proxy"""
     
-    base_url: str = "http://bedroc-proxy-v26etxhaf2lb-1155916080.us-east-1.elb.amazonaws.com/api/v1"
+    base_url: str = config("BEDROCK_BASE_URL")
     model_name: str = "gpt-3.5-turbo"
     temperature: float = 0.7
     max_tokens: int = 500
