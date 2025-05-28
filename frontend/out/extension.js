@@ -7,7 +7,7 @@ const http = require("http");
 const https = require("https");
 const url_1 = require("url");
 // Backend API configuration
-const apiBaseUrl = 'http://localhost:8000/api';
+const apiBaseUrl = 'http://localhost:8000';
 function activate(context) {
     // Create and register the sidebar provider
     const sidebarProvider = new SidebarProvider_1.SidebarProvider(context.extensionUri, context);

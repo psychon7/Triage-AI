@@ -10,31 +10,21 @@ start_time = time.time()
 
 from agents.agents import CustomAgents
 from tasks.tasks import CustomTasks
+from agents.dspy_integration import process_with_dspy
 
 
 # FastAPI imports
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, HTTPException
 import uuid
 from models.schema import ProblemRequest, StatusResponse, AgentOutputResponse, ResultResponse, FeedbackRequest, ApprovalRequest, PauseRequest, ResumeRequest, TaskResponse
 from tools.crew_tools import file_read_tool, architect_tools, programmer_tools, tester_tools, reviewer_tools, security_tools, search_web, read_file, write_file, create_directory
 from functions.functions import update_task_status, generate_full_plan,tasks_store,TaskStatus,CustomCrew
 from fastapi.middleware.cors import CORSMiddleware
 
-def register_routes(app: FastAPI):
-    """Register all API routes with the FastAPI app"""
-    # Add CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Adjust in production
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    
-    # Register all routes from this module
-    app.include_router(app.router)
 
-app = FastAPI()
+# Create router instead of FastAPI app
+router = APIRouter()
+
 # Tool lists for project manager
 project_manager_tools = [
     search_web,
@@ -45,7 +35,7 @@ project_manager_tools = [
 
 
 # API Endpoints
-@app.post("/run", response_model=TaskResponse)
+@router.post("/run", response_model=TaskResponse)
 async def run_problem(request: ProblemRequest, background_tasks: BackgroundTasks):
     """Start a new agent processing task with Project Manager first"""
     task_id = str(uuid.uuid4())
@@ -90,7 +80,7 @@ async def run_problem(request: ProblemRequest, background_tasks: BackgroundTasks
         "timestamp": time.time()
     }
 
-@app.get("/status/{task_id}", response_model=StatusResponse)
+@router.get("/status/{task_id}", response_model=StatusResponse)
 async def get_status(task_id: str):
     """Get current status of a task"""
     if task_id not in tasks_store:
@@ -117,7 +107,7 @@ async def get_status(task_id: str):
         "pause_timestamp": task.pause_timestamp
     }
 
-@app.get("/agent_output/{task_id}/{agent}", response_model=AgentOutputResponse)
+@router.get("/agent_output/{task_id}/{agent}", response_model=AgentOutputResponse)
 async def get_agent_output(task_id: str, agent: str):
     """Get output from a specific agent"""
     if task_id not in tasks_store:
@@ -132,7 +122,7 @@ async def get_agent_output(task_id: str, agent: str):
         "output": output
     }
 
-@app.get("/results/{task_id}", response_model=ResultResponse)
+@router.get("/results/{task_id}", response_model=ResultResponse)
 async def get_results(task_id: str):
     """Get final results of a completed task"""
     if task_id not in tasks_store:
@@ -149,7 +139,7 @@ async def get_results(task_id: str):
         "error": task.error
     }
 
-@app.post("/approve/{task_id}/{agent}")
+@router.post("/approve/{task_id}/{agent}")
 async def approve_agent_work(task_id: str, agent: str, request: ApprovalRequest, background_tasks: BackgroundTasks):
     """Submit approval/rejection for an agent's work"""
     if task_id not in tasks_store:
@@ -316,7 +306,7 @@ async def approve_agent_work(task_id: str, agent: str, request: ApprovalRequest,
         
         return {"message": f"{agent.capitalize()} work requires revision. Restarting with feedback."}
 
-@app.post("/pause/{task_id}")
+@router.post("/pause/{task_id}")
 async def pause_task(task_id: str, request: PauseRequest):
     """Pause a running task"""
     if task_id not in tasks_store:
@@ -345,7 +335,7 @@ async def pause_task(task_id: str, request: PauseRequest):
     
     return {"message": "Task paused successfully"}
 
-@app.post("/resume/{task_id}")
+@router.post("/resume/{task_id}")
 async def resume_task(task_id: str, request: ResumeRequest, background_tasks: BackgroundTasks):
     """Resume a paused task"""
     if task_id not in tasks_store:
@@ -421,7 +411,7 @@ async def resume_task(task_id: str, request: ResumeRequest, background_tasks: Ba
         background_tasks.add_task(resume_execution)
         return {"message": "Task resumed and continuing execution"}
 
-@app.post("/feedback/{task_id}/{agent}")
+@router.post("/feedback/{task_id}/{agent}")
 async def submit_feedback(task_id: str, agent: str, request: FeedbackRequest, background_tasks: BackgroundTasks):
     """Submit feedback for a specific agent's work on a task (legacy endpoint)"""
     if task_id not in tasks_store:
@@ -553,7 +543,7 @@ async def start_agent(task_id, agent_name):
         await start_reviewer(task_id)
 
 async def start_project_manager(task_id):
-    """Execute the project manager agent"""
+    """Execute the project manager agent with DSPy framework"""
     task = tasks_store.get(task_id)
     if not task:
         return
@@ -565,25 +555,57 @@ async def start_project_manager(task_id):
         # Get the original problem description
         problem = task.step_messages[0].replace("Task created: ", "")
         
-        # Create agents and tasks
-        agents = CustomAgents()
-        tasks_obj = CustomTasks()
-        
-        # Create PM agent
-        agent = agents.project_manager_agent(project_manager_tools)
-        
-        # Create task
-        pm_task = tasks_obj.project_management_task(agent, project_manager_tools, problem)
-        
-        # Create mini crew with just this agent
-        mini_crew = Crew(
-            agents=[agent],
-            tasks=[pm_task],
-            verbose=True,
+        update_task_status(
+            task_id,
+            "Processing with DSPy framework for optimized prompt generation...",
+            5,
+            "project_manager",
+            "in_progress"
         )
         
-        # Run the agent
-        result = mini_crew.kickoff()
+        # Use DSPy to process the user input and get structured output
+        try:
+            # Process with DSPy first
+            dspy_result = process_with_dspy(problem)
+            result = dspy_result
+            
+            update_task_status(
+                task_id,
+                "DSPy processing completed successfully",
+                5,
+                "project_manager",
+                "in_progress"
+            )
+        except Exception as dspy_error:
+            # Log the DSPy error
+            print(f"Error using DSPy: {str(dspy_error)}. Falling back to CrewAI.")
+            update_task_status(
+                task_id,
+                f"DSPy processing failed: {str(dspy_error)}. Falling back to CrewAI.",
+                0,
+                "project_manager",
+                "in_progress"
+            )
+            
+            # Fall back to CrewAI if DSPy fails
+            agents = CustomAgents()
+            tasks_obj = CustomTasks()
+            
+            # Create PM agent
+            agent = agents.project_manager_agent(project_manager_tools)
+            
+            # Create task
+            pm_task = tasks_obj.project_management_task(agent, project_manager_tools, problem)
+            
+            # Create mini crew with just this agent
+            mini_crew = Crew(
+                agents=[agent],
+                tasks=[pm_task],
+                verbose=True,
+            )
+            
+            # Run the agent
+            result = mini_crew.kickoff()
         
         # Store output
         task.agent_outputs["project_manager"] = str(result)

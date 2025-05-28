@@ -7,20 +7,23 @@ from decouple import config
 # Record start time for uptime tracking
 start_time = time.time()
 
-# FastAPI imports
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from crewai_tools import FileReadTool
+from routes.api_routes import router
 from functions.functions import CustomCrew
-from routes.api_routes import app as api_app
 
-
+# FastAPI imports
+from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import uuid
+from typing import Dict, List, Optional, Any
 
 # FIXED: Use ANTHROPIC_API_KEY instead of OPENAI_API_KEY
-api_key = config("ANTHROPIC_API_KEY")
+api_key = config("BEDROCK_API_KEY")
 os.environ["OPENAI_API_KEY"] = api_key
 
-
-
+# Initialize tools
+file_read_tool = FileReadTool()
 
 # Create FastAPI app
 app = FastAPI(title="Triage AI API", description="API for Triage AI agent system")
@@ -34,13 +37,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include the API router
+app.include_router(router)
 
 @app.get("/")
 async def get_root():
     return {"message": "Welcome to the Triage AI API", "version": "1.0.0", "status": "running","docs": "/docs", "uptime": time.time() - start_time}
-
-# Include the API routes
-app.mount("/api", api_app)
 
 # Keep CLI functionality or run API server
 if __name__ == "__main__":

@@ -90,7 +90,9 @@ class CustomCrew:
         
     def run_with_feedback(self, agent, feedback):
         """Restart a specific agent with feedback"""
-        if agent == "architect":
+        if agent == "project_manager":
+            return self.run_project_manager_with_feedback(feedback)
+        elif agent == "architect":
             return self.run_architect_with_feedback(feedback)
         elif agent == "programmer":
             return self.run_programmer_with_feedback(feedback)
@@ -100,6 +102,111 @@ class CustomCrew:
             return self.run_reviewer_with_feedback(feedback)
         else:
             return f"Invalid agent: {agent}"
+
+    def run_project_manager_with_feedback(self, feedback):
+        """Run project manager agent with feedback"""
+        try:
+            # Update task status
+            if self.task_id and self.task_id in tasks_store:
+                update_task_status(
+                    self.task_id, 
+                    f"Restarting project manager agent with feedback: {feedback}", 
+                    5, 
+                    "project_manager", 
+                    "in_progress"
+                )
+            
+            # Get the original problem description
+            problem = tasks_store[self.task_id].step_messages[0].replace("Task created: ", "")
+            
+            try:
+                # First try with DSPy
+                from agents.dspy_integration import process_with_dspy
+                
+                update_task_status(
+                    self.task_id,
+                    "Processing with DSPy framework with feedback...",
+                    5,
+                    "project_manager",
+                    "in_progress"
+                )
+                
+                # Enhanced problem with feedback
+                enhanced_problem = f"{problem}\n\nPrevious feedback: {feedback}"
+                
+                # Process with DSPy
+                result = process_with_dspy(enhanced_problem)
+                
+                update_task_status(
+                    self.task_id,
+                    "DSPy processing completed successfully",
+                    5,
+                    "project_manager",
+                    "in_progress"
+                )
+                
+            except Exception as dspy_error:
+                # Log the DSPy error
+                print(f"Error using DSPy with feedback: {str(dspy_error)}. Falling back to CrewAI.")
+                update_task_status(
+                    self.task_id,
+                    f"DSPy processing failed: {str(dspy_error)}. Falling back to CrewAI.",
+                    0,
+                    "project_manager",
+                    "in_progress"
+                )
+                
+                # Fall back to CrewAI
+                from agents.agents import CustomAgents
+                from tasks.tasks import CustomTasks
+                from tools.crew_tools import project_manager_tools
+                
+                agents = CustomAgents()
+                tasks_obj = CustomTasks()
+                
+                # Create PM agent
+                pm_agent = agents.project_manager_agent(project_manager_tools)
+                
+                # Create task with feedback
+                modified_problem = f"{problem}\n\nPrevious feedback: {feedback}"
+                pm_task = tasks_obj.project_management_task(pm_agent, project_manager_tools, modified_problem)
+                
+                # Create mini crew with just the PM task
+                mini_crew = Crew(
+                    agents=[pm_agent],
+                    tasks=[pm_task],
+                    verbose=True,
+                )
+                
+                # Run the workflow
+                result = mini_crew.kickoff()
+            
+            # Update task status
+            if self.task_id and self.task_id in tasks_store:
+                update_task_status(
+                    self.task_id,
+                    "Project Management revised based on feedback.",
+                    5,
+                    "project_manager",
+                    "awaiting_feedback"
+                )
+                tasks_store[self.task_id].agent_outputs["project_manager"] = str(result)
+                tasks_store[self.task_id].awaiting_feedback = True
+                
+            return result
+        except Exception as e:
+            error_msg = f"Error during project manager revision: {str(e)}"
+            print(error_msg)
+            if self.task_id and self.task_id in tasks_store:
+                update_task_status(
+                    self.task_id,
+                    f"Error during revision: {str(e)}",
+                    0,
+                    "project_manager",
+                    "error"
+                )
+                tasks_store[self.task_id].error = str(e)
+            return error_msg
             
     def run_architect_with_feedback(self, feedback):
         """Run architect agent with feedback"""

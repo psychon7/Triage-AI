@@ -1,8 +1,6 @@
 from crewai import Agent
 from textwrap import dedent
-from langchain_community.llms import OpenAI, Ollama
 from agents.custom_llm import BedrockCustomLLM
-from decouple import config
 
 
 class CustomAgents:
